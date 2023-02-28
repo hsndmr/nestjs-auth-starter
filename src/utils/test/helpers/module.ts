@@ -21,6 +21,7 @@ export const createBaseTestingModule = (metadata: ModuleMetadata) => {
     imports: [
       ConfigModule.forRoot({
         isGlobal: true,
+        envFilePath: '.env.test',
       }),
       I18nModule.forRoot({
         fallbackLanguage: 'en',
