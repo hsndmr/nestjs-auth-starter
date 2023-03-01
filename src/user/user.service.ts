@@ -47,7 +47,7 @@ export class UserService {
     return createdUser.save();
   }
 
-  async createToken({ user, exp }: TokenOptions) {
+  async createToken({ user, exp, scopes }: TokenOptions) {
     const signed = this.jwtService.sign({
       sub: user.id,
       exp: exp,
@@ -56,6 +56,7 @@ export class UserService {
     const token = new UserToken({
       jti: this.cryptoService.hash(signed.jti),
       expires_at: new Date(signed.exp * MS_PER_SEC),
+      scopes,
     });
 
     user.tokens.push(token);
