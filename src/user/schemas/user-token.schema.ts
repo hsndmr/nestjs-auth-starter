@@ -20,4 +20,7 @@ export class UserToken {
 
   @Prop()
   revoked_at?: Date;
+
+  @Prop()
+  scopes?: string[];
 }
