@@ -78,6 +78,17 @@ describe('UserService', () => {
     expect(token).toBeDefined();
   });
 
+  it('should create a token with scopes', async () => {
+    const user = await userFactory.create();
+
+    await service.createToken({
+      user: user,
+      scopes: ['test'],
+    });
+
+    expect(user.tokens[0].scopes).toEqual(['test']);
+  });
+
   it('should find a token by jti and user id', async () => {
     // Arrange
     const user = await userFactory.create();
