@@ -6,6 +6,7 @@ import {
   createBaseTestingModule,
 } from '../utils/test/helpers/module';
 import { JwtService } from '../jwt/jwt.service';
+import { UserToken } from './schemas/user-token.schema';
 
 describe('UserService', () => {
   let module: TestingModule;
@@ -112,6 +113,49 @@ describe('UserService', () => {
     expect(foundToken._id).toEqual(user._id);
     expect(foundToken.tokens.length).toEqual(1);
     expect(foundToken.tokens[0].jti).toEqual(user.tokens[1].jti);
+  });
+
+  describe('tokenCan', () => {
+    it('should return true if token has no scopes', () => {
+      const token = new UserToken({
+        jti: 'test-jti',
+        expires_at: new Date(),
+      });
+
+      expect(service.tokenCan(token)).toBe(true);
+    });
+
+    it('should return false if scopes are not provided', () => {
+      const token = new UserToken({
+        jti: 'test-jti',
+        expires_at: new Date(),
+        scopes: ['test-scope'],
+      });
+
+      expect(service.tokenCan(token)).toBe(false);
+    });
+
+    it('should return true if token has required scope', () => {
+      const token = new UserToken({
+        jti: 'test-jti',
+        expires_at: new Date(),
+        scopes: ['test-scope'],
+      });
+
+      expect(service.tokenCan(token, ['test-scope', 'test-scope-2'])).toBe(
+        true,
+      );
+    });
+
+    it('should return false if token does not have required scope', () => {
+      const token = new UserToken({
+        jti: 'test-jti',
+        expires_at: new Date(),
+        scopes: ['test-scope'],
+      });
+
+      expect(service.tokenCan(token, ['other-scope'])).toBe(false);
+    });
   });
 
   afterEach(async () => {

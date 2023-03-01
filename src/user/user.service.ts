@@ -77,4 +77,16 @@ export class UserService {
       },
     );
   }
+
+  tokenCan(token: UserToken, scopes?: string[]) {
+    if (!token.scopes || !token.scopes.length) {
+      return true;
+    }
+
+    if (!scopes || !scopes.length) {
+      return false;
+    }
+
+    return scopes.some((scope) => token.scopes.includes(scope));
+  }
 }
