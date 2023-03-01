@@ -93,6 +93,10 @@ describe('UserService', () => {
     // Arrange
     const user = await userFactory.create();
 
+    await service.createToken({
+      user: user,
+    });
+
     const token = await service.createToken({
       user: user,
     });
@@ -106,6 +110,8 @@ describe('UserService', () => {
 
     // Assert
     expect(foundToken._id).toEqual(user._id);
+    expect(foundToken.tokens.length).toEqual(1);
+    expect(foundToken.tokens[0].jti).toEqual(user.tokens[1].jti);
   });
 
   afterEach(async () => {
