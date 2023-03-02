@@ -20,4 +20,8 @@ export type JwtValidatorServiceSchema = {
       user: UserDocument;
     };
   };
+
+  checkScopes: {
+    data: boolean;
+  };
 };

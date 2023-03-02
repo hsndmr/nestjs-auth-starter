@@ -42,24 +42,38 @@ const jwtValidatorMachine = createMachine<JwtValidatorContext>(
         invoke: {
           src: 'verifyUser',
           onDone: {
-            target: 'authenticatedUser',
+            target: 'checkingScopes',
             actions: 'assignUserToContext',
           },
           onError: {
-            target: 'unauthenticatedUser',
+            target: 'unauthorized',
           },
         },
       },
-      authenticatedUser: {
+      checkingScopes: {
+        invoke: {
+          src: 'checkScopes',
+          onDone: {
+            target: 'authorized',
+          },
+          onError: {
+            target: 'forbidden',
+          },
+        },
+      },
+      authorized: {
         type: 'final',
       },
-      unauthenticatedUser: {
+      unauthorized: {
         type: 'final',
       },
       invalidToken: {
         type: 'final',
       },
       invalidHeader: {
+        type: 'final',
+      },
+      forbidden: {
         type: 'final',
       },
     },

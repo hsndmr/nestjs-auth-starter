@@ -15,6 +15,19 @@ describe('JwtAuthGuard', () => {
   let jwtAuthGuard: JwtAuthGuard;
   let userService: UserService;
   let userFactory: UserFactory;
+  const reflectorMock = {
+    getAllAndOverride: jest.fn(),
+  };
+
+  const getRequest = jest.fn();
+
+  const context = {
+    switchToHttp: () => ({
+      getRequest: getRequest,
+    }),
+    getHandler: jest.fn(),
+    getClass: jest.fn(),
+  };
 
   beforeEach(async () => {
     module = await createBaseTestingModule({
@@ -27,7 +40,12 @@ describe('JwtAuthGuard', () => {
     const jwtService = module.get<JwtService>(JwtService);
     const i18nService = module.get<I18nService>(I18nService);
 
-    jwtAuthGuard = new JwtAuthGuard(userService, jwtService, i18nService);
+    jwtAuthGuard = new JwtAuthGuard(
+      userService,
+      jwtService,
+      i18nService,
+      reflectorMock as any,
+    );
   });
 
   it('should be defined', () => {
@@ -48,11 +66,7 @@ describe('JwtAuthGuard', () => {
       },
     });
 
-    const context = {
-      switchToHttp: () => ({
-        getRequest: request,
-      }),
-    };
+    getRequest.mockImplementation(request);
 
     // Act
     const result = await jwtAuthGuard.canActivate(context as any);
@@ -60,7 +74,7 @@ describe('JwtAuthGuard', () => {
     // Assert
     expect(result).toBeTruthy();
     expect(request).toBeCalledTimes(1);
-    expect(request().user._id).toEqual(user._id);
+    expect(getRequest().user._id).toEqual(user._id);
   });
 
   it('should throw http exception for unauthorized request with no token', async () => {
@@ -69,11 +83,7 @@ describe('JwtAuthGuard', () => {
       headers: {},
     });
 
-    const context = {
-      switchToHttp: () => ({
-        getRequest: request,
-      }),
-    };
+    getRequest.mockImplementation(request);
 
     // Act & Assert
     await expect(jwtAuthGuard.canActivate(context as any)).rejects.toEqual(
@@ -90,11 +100,7 @@ describe('JwtAuthGuard', () => {
       },
     });
 
-    const context = {
-      switchToHttp: () => ({
-        getRequest: request,
-      }),
-    };
+    getRequest.mockImplementation(request);
 
     // Act & Assert
     await expect(jwtAuthGuard.canActivate(context as any)).rejects.toEqual(
@@ -118,11 +124,7 @@ describe('JwtAuthGuard', () => {
       },
     });
 
-    const context = {
-      switchToHttp: () => ({
-        getRequest: request,
-      }),
-    };
+    getRequest.mockImplementation(request);
 
     // Act & Assert
     await expect(jwtAuthGuard.canActivate(context as any)).rejects.toEqual(
@@ -148,17 +150,90 @@ describe('JwtAuthGuard', () => {
       },
     });
 
-    const context = {
-      switchToHttp: () => ({
-        getRequest: request,
-      }),
-    };
+    getRequest.mockImplementation(request);
 
     // Act & Assert
     await expect(jwtAuthGuard.canActivate(context as any)).rejects.toEqual(
       new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED),
     );
     expect(request).toBeCalledTimes(1);
+  });
+
+  describe('checkingScopes status', () => {
+    it('should resolve true if token has required scopes', async () => {
+      // Arrange
+      const user = await userFactory.create();
+      const token = await userService.createToken({
+        user,
+        scopes: ['read:users', 'write:users'],
+      });
+
+      const request = jest.fn().mockReturnValue({
+        headers: {
+          authorization: `Bearer ${token}`,
+        },
+      });
+
+      getRequest.mockImplementation(request);
+
+      reflectorMock.getAllAndOverride.mockReturnValue(['read:users']);
+
+      // Act
+      const result = await jwtAuthGuard.canActivate(context as any);
+
+      // Assert
+      expect(result).toBeTruthy();
+      expect(request).toBeCalledTimes(1);
+      expect(getRequest().user._id).toEqual(user._id);
+    });
+
+    it('should reject with an HTTP exception if token does not have required scopes', async () => {
+      // Arrange
+      const user = await userFactory.create();
+      const token = await userService.createToken({
+        user,
+        scopes: ['read:users'],
+      });
+
+      const request = jest.fn().mockReturnValue({
+        headers: {
+          authorization: `Bearer ${token}`,
+        },
+      });
+
+      getRequest.mockImplementation(request);
+
+      reflectorMock.getAllAndOverride.mockReturnValue(['write:users']);
+
+      // Act & Assert
+      await expect(jwtAuthGuard.canActivate(context as any)).rejects.toEqual(
+        new HttpException('Forbidden', HttpStatus.FORBIDDEN),
+      );
+      expect(request).toBeCalledTimes(1);
+    });
+
+    it('should reject with an HTTP exception if token has scopes and controller does not have scopes', async () => {
+      // Arrange
+      const user = await userFactory.create();
+      const token = await userService.createToken({
+        user,
+        scopes: ['read:users'],
+      });
+
+      const request = jest.fn().mockReturnValue({
+        headers: {
+          authorization: `Bearer ${token}`,
+        },
+      });
+
+      getRequest.mockImplementation(request);
+
+      // Act & Assert
+      await expect(jwtAuthGuard.canActivate(context as any)).rejects.toEqual(
+        new HttpException('Forbidden', HttpStatus.FORBIDDEN),
+      );
+      expect(request).toBeCalledTimes(1);
+    });
   });
 
   afterEach(async () => {

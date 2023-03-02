@@ -2,6 +2,7 @@ import {
   CanActivate,
   ExecutionContext,
   HttpException,
+  HttpStatus,
   Injectable,
 } from '@nestjs/common';
 import { IncomingMessage } from 'http';
@@ -11,6 +12,8 @@ import jwtValidatorMachine from './machines/jwt-validator.machine';
 import { UserService } from '../user/user.service';
 import { JwtService } from '../jwt/jwt.service';
 import { I18nService } from 'nestjs-i18n';
+import { Reflector } from '@nestjs/core';
+import { SCOPES_KEY } from './decorators/scopes.decorator';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -18,12 +21,18 @@ export class JwtAuthGuard implements CanActivate {
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
     private i18n: I18nService,
+    private reflector: Reflector,
   ) {}
 
   canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest() as IncomingMessage & {
       user?: UserDocument;
     };
+
+    const scopes = this.reflector.getAllAndOverride<string[]>(SCOPES_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
 
     const service = interpret(
       jwtValidatorMachine
@@ -51,6 +60,17 @@ export class JwtAuthGuard implements CanActivate {
                 return Promise.reject(e);
               }
             },
+            checkScopes: (context) => {
+              const tokenCanAccess = this.userService.tokenCan(
+                context.user.tokens[0],
+                scopes,
+              );
+              if (!tokenCanAccess) {
+                return Promise.reject('');
+              }
+
+              return Promise.resolve(true);
+            },
           },
         }),
     );
@@ -60,16 +80,30 @@ export class JwtAuthGuard implements CanActivate {
         .onDone(() => {
           const snapshot = service.getSnapshot();
 
-          if (snapshot.matches('authenticatedUser')) {
+          if (snapshot.matches('authorized')) {
             request.user = snapshot.context.user;
             return resolve(true);
           }
 
+          const [messageKey, status] = this.getErrorMessageKeyAndStatus(
+            snapshot.matches('forbidden'),
+          );
+
           return reject(
-            new HttpException(this.i18n.translate('errors.unauthorized'), 401),
+            new HttpException(this.i18n.translate(messageKey), status),
           );
         })
         .start();
     });
+  }
+
+  protected getErrorMessageKeyAndStatus(
+    isForbiddenStatus: boolean,
+  ): [string, number] {
+    if (isForbiddenStatus) {
+      return ['errors.forbidden', HttpStatus.FORBIDDEN];
+    }
+
+    return ['errors.unauthorized', HttpStatus.UNAUTHORIZED];
   }
 }
