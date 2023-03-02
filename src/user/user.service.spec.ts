@@ -112,6 +112,10 @@ describe('UserService', () => {
         user: user,
       });
 
+      await service.createToken({
+        user: user,
+      });
+
       const verifiedToken = await jwtService.verify(token);
 
       const { jti, sub } = verifiedToken;

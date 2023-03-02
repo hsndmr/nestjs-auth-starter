@@ -67,13 +67,16 @@ export class UserService {
   }
 
   async findUserByJtiAndId(jti: string, id: string) {
+    const tokens = { $elemMatch: { jti: this.cryptoService.hash(jti) } };
+
     return this.userModel.findOne(
       {
         _id: id,
-        'tokens.jti': this.cryptoService.hash(jti),
+        tokens,
       },
       {
-        'tokens.$': 1,
+        tokens,
+        __v: 0,
       },
     );
   }
