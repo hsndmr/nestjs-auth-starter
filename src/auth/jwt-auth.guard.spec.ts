@@ -133,6 +133,32 @@ describe('JwtAuthGuard', () => {
     expect(request).toBeCalledTimes(1);
   });
 
+  it('should throw http exception for unauthorized request with revoked token', async () => {
+    // Arrange
+    const user = await userFactory.create();
+
+    const token = await userService.createToken({
+      user,
+      exp: -1,
+    });
+
+    await userService.revokeTokenByJtiAndUserId(user._id, user.tokens[0].jti);
+
+    const request = jest.fn().mockReturnValue({
+      headers: {
+        authorization: `Bearer ${token}`,
+      },
+    });
+
+    getRequest.mockImplementation(request);
+
+    // Act & Assert
+    await expect(jwtAuthGuard.canActivate(context as any)).rejects.toEqual(
+      new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED),
+    );
+    expect(request).toBeCalledTimes(1);
+  });
+
   it('should throw http exception for unauthorized request with missing user in database', async () => {
     // Arrange
     const user = await userFactory.create();
