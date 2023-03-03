@@ -99,4 +99,17 @@ export class UserService {
 
     return scopes.some((scope) => token.scopes.includes(scope));
   }
+
+  async revokeTokenByJtiAndUserId(userId: string, jti: string) {
+    const result = await this.userModel.updateOne(
+      {
+        _id: userId,
+        'tokens.jti': jti,
+        'tokens.revoked_at': { $exists: false },
+      },
+      { $set: { 'tokens.$.revoked_at': new Date() } },
+    );
+
+    return result.modifiedCount === 1;
+  }
 }

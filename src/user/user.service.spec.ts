@@ -173,6 +173,81 @@ describe('UserService', () => {
     });
   });
 
+  describe('revokeTokenByJtiAndUserId', () => {
+    it('should revoke a token', async () => {
+      // Arrange
+      const user = await userFactory.create();
+      await service.createToken({ user });
+
+      // Act
+      const result = await service.revokeTokenByJtiAndUserId(
+        user._id,
+        user.tokens[0].jti,
+      );
+
+      // Assert
+      expect(result).toBe(true);
+      const updatedUser = await service.findOneById(user._id);
+      expect(updatedUser.tokens[0].revoked_at).toBeDefined();
+    });
+
+    it('should not revoke an already revoked token', async () => {
+      // Arrange
+      const user = await userFactory.create();
+      await service.createToken({ user });
+
+      // Act
+      const result1 = await service.revokeTokenByJtiAndUserId(
+        user._id,
+        user.tokens[0].jti,
+      );
+      const result2 = await service.revokeTokenByJtiAndUserId(
+        user._id,
+        user.tokens[0].jti,
+      );
+
+      // Assert
+      expect(result1).toBe(true);
+      expect(result2).toBe(false);
+    });
+
+    it('should not revoke a non-existing token', async () => {
+      // Arrange
+      const user = await userFactory.create();
+
+      // Act
+      const result = await service.revokeTokenByJtiAndUserId(
+        user._id,
+        'non-existing-token-id',
+      );
+
+      // Assert
+      expect(result).toBe(false);
+      const updatedUser = await service.findOneById(user._id);
+      expect(updatedUser.tokens).toHaveLength(0);
+    });
+
+    it('should not revoke a token for a different user', async () => {
+      // Arrange
+      const user1 = await userFactory.create();
+      const user2 = await userFactory.create();
+      await service.createToken({ user: user1 });
+
+      // Act
+      const result = await service.revokeTokenByJtiAndUserId(
+        user2._id,
+        user1.tokens[0].jti,
+      );
+
+      // Assert
+      expect(result).toBe(false);
+      const updatedUser1 = await service.findOneById(user1._id);
+      const updatedUser2 = await service.findOneById(user2._id);
+      expect(updatedUser1.tokens[0].revoked_at).toBeUndefined();
+      expect(updatedUser2.tokens).toHaveLength(0);
+    });
+  });
+
   afterEach(async () => {
     await closeAllConnections({
       module,
