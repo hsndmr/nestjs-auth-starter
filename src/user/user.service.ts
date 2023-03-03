@@ -67,7 +67,14 @@ export class UserService {
   }
 
   async findUserByJtiAndId(jti: string, id: string) {
-    const tokens = { $elemMatch: { jti: this.cryptoService.hash(jti) } };
+    const tokens = {
+      $elemMatch: {
+        jti: this.cryptoService.hash(jti),
+        revoked_at: {
+          $exists: false,
+        },
+      },
+    };
 
     return this.userModel.findOne(
       {
