@@ -11,13 +11,15 @@ export class UserFactory extends Factory<UserDocument> {
 
   tokenService: TokenService;
 
-  async create() {
+  async create(partialUser?: Partial<User>): Promise<UserDocument> {
     const createdUser = new this.model(
       new User({
         email: this.faker.internet.email(),
         name: this.faker.name.firstName(),
         lastName: this.faker.name.lastName(),
-        password: this.faker.internet.password(),
+        password:
+          '$2b$04$Uvn5oVukGi4s1RXilFfj3u4Fmg1qw3wa1qQyniBHhmi7lMJJ9aaQO', // myPassword123
+        ...partialUser,
       }),
     );
     return createdUser.save();

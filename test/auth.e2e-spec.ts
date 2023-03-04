@@ -10,6 +10,7 @@ import { UserFactory } from '../src/utils/test/factories/user.factory';
 import { UserService } from '../src/user/user.service';
 import { AuthModule } from '../src/auth/auth.module';
 import { authenticatedRequest } from '../src/utils/test/helpers/request';
+import { TokenService } from '../src/user/token.service';
 
 const USER_ROUTE = `${AUTH_ROUTE_PREFIX}/user`;
 
@@ -17,6 +18,7 @@ describe('AuthController (e2e)', () => {
   let app: INestApplication;
   let userFactory: UserFactory;
   let userService: UserService;
+  let tokenService: TokenService;
 
   beforeEach(async () => {
     const module = await createBaseTestingModule({
@@ -26,6 +28,8 @@ describe('AuthController (e2e)', () => {
     userFactory = new UserFactory().setModel(module);
 
     userService = module.get(UserService);
+
+    tokenService = module.get(TokenService);
 
     app = await createBaseNestApplication(module);
 
@@ -105,6 +109,119 @@ describe('AuthController (e2e)', () => {
         .expect(HttpStatus.UNAUTHORIZED)
         .then((response) => {
           expect(response.body.message).toEqual('Unauthorized');
+        });
+    });
+  });
+
+  describe('login-user (POST)', () => {
+    it('should login a user (tokenCreated status)', async () => {
+      const user = await userFactory.create();
+
+      return (
+        request(app.getHttpServer())
+          .post(`${AUTH_ROUTE_PREFIX}/login-user`)
+          .send({
+            email: user.email,
+            password: 'myPassword123',
+          })
+          // .expect(HttpStatus.CREATED)
+          .then((response) => {
+            expect(response.body).toHaveProperty('token');
+          })
+      );
+    });
+
+    it('should return a bad request error if email is missing (notFoundUser status)', async () => {
+      return request(app.getHttpServer())
+        .post(`${AUTH_ROUTE_PREFIX}/login-user`)
+        .send({
+          email: 'email@email.com',
+          password: 'myPassword123',
+        })
+        .expect(HttpStatus.BAD_REQUEST)
+        .then((response) => {
+          expect(response.body.message).toEqual('User not found');
+        });
+    });
+
+    it('should return a bad request error if password is missing', async () => {
+      return request(app.getHttpServer())
+        .post(`${AUTH_ROUTE_PREFIX}/login-user`)
+        .send({
+          email: 'email@email.com',
+        })
+        .expect(HttpStatus.BAD_REQUEST)
+        .then((response) => {
+          expect(response.body.message).toEqual([
+            'password should not be empty',
+          ]);
+        });
+    });
+
+    it('should return a bad request error if email is invalid', async () => {
+      return request(app.getHttpServer())
+        .post(`${AUTH_ROUTE_PREFIX}/login-user`)
+        .send({
+          email: 'invalid',
+          password: 'myPassword123',
+        })
+        .expect(HttpStatus.BAD_REQUEST)
+        .then((response) => {
+          expect(response.body.message).toEqual(['email must be an email']);
+        });
+    });
+
+    it('should return a bad request error if password is incorrect (passwordNotMatched status)', async () => {
+      const user = await userFactory.create();
+
+      return request(app.getHttpServer())
+        .post(`${AUTH_ROUTE_PREFIX}/login-user`)
+        .send({
+          email: user.email,
+          password: 'wrongPassword',
+        })
+        .expect(HttpStatus.BAD_REQUEST)
+        .then((response) => {
+          expect(response.body.message).toEqual('Wrong password');
+        });
+    });
+
+    it('should return a server error if an exception occurs during findUserById (notFoundUser status)', async () => {
+      const loginUserDto = {
+        email: userFactory.faker.internet.email(),
+        password: userFactory.faker.internet.password(),
+      };
+
+      jest.spyOn(userService, 'findOneByEmail').mockImplementationOnce(() => {
+        throw new Error('Test error');
+      });
+
+      return request(app.getHttpServer())
+        .post(`${AUTH_ROUTE_PREFIX}/login-user`)
+        .send(loginUserDto)
+        .expect(HttpStatus.INTERNAL_SERVER_ERROR)
+        .then((response) => {
+          expect(response.body.message).toEqual('Server error');
+        });
+    });
+
+    it('should return a server error if an exception occurs during creating a token (tokenNotCreated)', async () => {
+      const user = await userFactory.create();
+      const loginUserDto = {
+        email: user.email,
+        password: 'myPassword123',
+      };
+
+      jest.spyOn(tokenService, 'create').mockImplementationOnce(() => {
+        throw new Error('Test error');
+      });
+
+      return request(app.getHttpServer())
+        .post(`${AUTH_ROUTE_PREFIX}/login-user`)
+        .send(loginUserDto)
+        .expect(HttpStatus.INTERNAL_SERVER_ERROR)
+        .then((response) => {
+          expect(response.body.message).toEqual('Server error');
         });
     });
   });

@@ -21,6 +21,9 @@ import { User } from './decorators/user.decorator';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { AUTH_ROUTE_PREFIX } from '../constants/route';
 import { TokenService } from '../user/token.service';
+import { LoginUserDto } from './dtos/login-user.dto';
+import { userLoginMachine } from './machines/user-login.machine';
+import { CryptoService } from '../crypto/crypto.service';
 
 @Controller(AUTH_ROUTE_PREFIX)
 @UseInterceptors(MongooseClassSerializerInterceptor(UserModel))
@@ -30,6 +33,7 @@ export class AuthController {
     private readonly tokenService: TokenService,
     private i18n: I18nService,
     private readonly logger: AppLogger,
+    private readonly cryptoService: CryptoService,
   ) {}
 
   @Post('user')
@@ -115,5 +119,109 @@ export class AuthController {
   @Get('user')
   async getUser(@User() user: UserDocument) {
     return user;
+  }
+
+  @Post('login-user')
+  async login(@Body() loginUserDto: LoginUserDto) {
+    const service = interpret(
+      userLoginMachine
+        .withContext({
+          dto: loginUserDto,
+        })
+        .withConfig({
+          services: {
+            findUserById: async (context) => {
+              try {
+                const user = await this.userService.findOneByEmail(
+                  context.dto.email,
+                );
+
+                if (!user) {
+                  return Promise.reject({
+                    error: this.i18n.translate('auth.notFoundUser'),
+                    status: HttpStatus.BAD_REQUEST,
+                  });
+                }
+
+                return Promise.resolve({
+                  user,
+                });
+              } catch (e) {
+                this.logger.error(e);
+                return Promise.reject({
+                  error: this.i18n.translate('errors.server'),
+                  status: HttpStatus.INTERNAL_SERVER_ERROR,
+                });
+              }
+            },
+            checkPassword: async (context) => {
+              const { user, dto } = context;
+
+              try {
+                const isMatch = await this.cryptoService.comparePasswords(
+                  dto.password,
+                  user.password,
+                );
+
+                if (!isMatch) {
+                  return Promise.reject({
+                    error: this.i18n.translate('auth.wrongPassword'),
+                    status: HttpStatus.BAD_REQUEST,
+                  });
+                }
+
+                return Promise.resolve();
+              } catch (e) {
+                this.logger.error(e);
+                return Promise.reject({
+                  error: this.i18n.translate('errors.server'),
+                  status: HttpStatus.INTERNAL_SERVER_ERROR,
+                });
+              }
+            },
+            createToken: async (context) => {
+              try {
+                const token = await this.tokenService.create({
+                  user: context.user,
+                });
+
+                return Promise.resolve({
+                  token,
+                });
+              } catch (e) {
+                this.logger.error(e);
+                return Promise.reject({
+                  error: this.i18n.translate('errors.server'),
+                  status: HttpStatus.INTERNAL_SERVER_ERROR,
+                });
+              }
+            },
+          },
+        }),
+    );
+
+    return new Promise((resolve, reject) => {
+      service
+        .onDone(() => {
+          const snapshot = service.getSnapshot();
+
+          if (!snapshot.matches('tokenCreated')) {
+            reject(
+              new HttpException(
+                snapshot.context.error,
+                snapshot.context.status,
+              ),
+            );
+
+            return;
+          }
+
+          resolve({
+            user: snapshot.context.user,
+            token: snapshot.context.token,
+          });
+        })
+        .start();
+    });
   }
 }
