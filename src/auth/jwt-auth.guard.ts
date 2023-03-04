@@ -14,11 +14,13 @@ import { JwtService } from '../jwt/jwt.service';
 import { I18nService } from 'nestjs-i18n';
 import { Reflector } from '@nestjs/core';
 import { SCOPES_KEY } from './decorators/scopes.decorator';
+import { TokenService } from '../user/token.service';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
   constructor(
     private readonly userService: UserService,
+    private readonly tokenService: TokenService,
     private readonly jwtService: JwtService,
     private i18n: I18nService,
     private reflector: Reflector,
@@ -46,7 +48,7 @@ export class JwtAuthGuard implements CanActivate {
             },
             verifyUser: async (context) => {
               try {
-                const user = await this.userService.findUserByJtiAndId(
+                const user = await this.tokenService.findUserByJtiAndUserId(
                   context.verifiedToken.jti,
                   context.verifiedToken.sub,
                 );
@@ -61,7 +63,7 @@ export class JwtAuthGuard implements CanActivate {
               }
             },
             checkScopes: (context) => {
-              const tokenCanAccess = this.userService.tokenCan(
+              const tokenCanAccess = this.tokenService.can(
                 context.user.tokens[0],
                 scopes,
               );

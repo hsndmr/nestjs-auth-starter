@@ -20,12 +20,14 @@ import { JwtAuthGuard } from './jwt-auth.guard';
 import { User } from './decorators/user.decorator';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { AUTH_ROUTE_PREFIX } from '../constants/route';
+import { TokenService } from '../user/token.service';
 
 @Controller(AUTH_ROUTE_PREFIX)
 @UseInterceptors(MongooseClassSerializerInterceptor(UserModel))
 export class AuthController {
   constructor(
     private readonly userService: UserService,
+    private readonly tokenService: TokenService,
     private i18n: I18nService,
     private readonly logger: AppLogger,
   ) {}
@@ -64,7 +66,7 @@ export class AuthController {
             createUser: async (context) => {
               try {
                 const user = await this.userService.createFromDto(context.dto);
-                const token = await this.userService.createToken({
+                const token = await this.tokenService.create({
                   user,
                 });
                 return Promise.resolve({

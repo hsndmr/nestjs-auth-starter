@@ -9,12 +9,15 @@ import { UserService } from '../user/user.service';
 import { UserFactory } from '../utils/test/factories/user.factory';
 import { I18nService } from 'nestjs-i18n';
 import { HttpException, HttpStatus } from '@nestjs/common';
+import { TokenService } from '../user/token.service';
 
 describe('JwtAuthGuard', () => {
   let module: TestingModule;
   let jwtAuthGuard: JwtAuthGuard;
   let userService: UserService;
   let userFactory: UserFactory;
+  let tokenService: TokenService;
+
   const reflectorMock = {
     getAllAndOverride: jest.fn(),
   };
@@ -39,9 +42,11 @@ describe('JwtAuthGuard', () => {
     userService = module.get<UserService>(UserService);
     const jwtService = module.get<JwtService>(JwtService);
     const i18nService = module.get<I18nService>(I18nService);
+    tokenService = module.get<TokenService>(TokenService);
 
     jwtAuthGuard = new JwtAuthGuard(
       userService,
+      tokenService,
       jwtService,
       i18nService,
       reflectorMock as any,
@@ -56,7 +61,7 @@ describe('JwtAuthGuard', () => {
     // Arrange
     const user = await userFactory.create();
 
-    const token = await userService.createToken({
+    const token = await tokenService.create({
       user,
     });
 
@@ -113,7 +118,7 @@ describe('JwtAuthGuard', () => {
     // Arrange
     const user = await userFactory.create();
 
-    const token = await userService.createToken({
+    const token = await tokenService.create({
       user,
       exp: -1,
     });
@@ -137,12 +142,12 @@ describe('JwtAuthGuard', () => {
     // Arrange
     const user = await userFactory.create();
 
-    const token = await userService.createToken({
+    const token = await tokenService.create({
       user,
       exp: -1,
     });
 
-    await userService.revokeTokenByJtiAndUserId(user._id, user.tokens[0].jti);
+    await tokenService.revokeByJtiAndUserId(user._id, user.tokens[0].jti);
 
     const request = jest.fn().mockReturnValue({
       headers: {
@@ -163,7 +168,7 @@ describe('JwtAuthGuard', () => {
     // Arrange
     const user = await userFactory.create();
 
-    const token = await userService.createToken({
+    const token = await tokenService.create({
       user,
     });
 
@@ -189,7 +194,7 @@ describe('JwtAuthGuard', () => {
     it('should resolve true if token has required scopes', async () => {
       // Arrange
       const user = await userFactory.create();
-      const token = await userService.createToken({
+      const token = await tokenService.create({
         user,
         scopes: ['read:users', 'write:users'],
       });
@@ -216,7 +221,7 @@ describe('JwtAuthGuard', () => {
     it('should reject with an HTTP exception if token does not have required scopes', async () => {
       // Arrange
       const user = await userFactory.create();
-      const token = await userService.createToken({
+      const token = await tokenService.create({
         user,
         scopes: ['read:users'],
       });
@@ -241,7 +246,7 @@ describe('JwtAuthGuard', () => {
     it('should reject with an HTTP exception if token has scopes and controller does not have scopes', async () => {
       // Arrange
       const user = await userFactory.create();
-      const token = await userService.createToken({
+      const token = await tokenService.create({
         user,
         scopes: ['read:users'],
       });

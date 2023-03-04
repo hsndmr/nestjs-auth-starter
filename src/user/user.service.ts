@@ -4,11 +4,7 @@ import { User, UserDocument } from './schemas/user.schema';
 import { Model } from 'mongoose';
 import { CreateUserDto } from '../auth/dtos/create-user.dto';
 import { JwtService } from '../jwt/jwt.service';
-import { UserToken } from './schemas/user-token.schema';
-import { TokenOptions } from './interfaces/user-service-create-token-options.interface';
 import { CryptoService } from '../crypto/crypto.service';
-
-const MS_PER_SEC = 1000;
 
 @Injectable()
 export class UserService {
@@ -45,71 +41,5 @@ export class UserService {
       password: await this.cryptoService.hashPassword(user.password),
     });
     return createdUser.save();
-  }
-
-  async createToken({ user, exp, scopes }: TokenOptions) {
-    const signed = this.jwtService.sign({
-      sub: user.id,
-      exp: exp,
-    });
-
-    const token = new UserToken({
-      jti: this.cryptoService.hash(signed.jti),
-      expires_at: new Date(signed.exp * MS_PER_SEC),
-      scopes,
-    });
-
-    user.tokens.push(token);
-
-    await user.save();
-
-    return signed.token;
-  }
-
-  async findUserByJtiAndId(jti: string, id: string) {
-    const tokens = {
-      $elemMatch: {
-        jti: this.cryptoService.hash(jti),
-        revoked_at: {
-          $exists: false,
-        },
-      },
-    };
-
-    return this.userModel.findOne(
-      {
-        _id: id,
-        tokens,
-      },
-      {
-        tokens,
-        __v: 0,
-      },
-    );
-  }
-
-  tokenCan(token: UserToken, scopes?: string[]) {
-    if (!token.scopes || !token.scopes.length) {
-      return true;
-    }
-
-    if (!scopes || !scopes.length) {
-      return false;
-    }
-
-    return scopes.some((scope) => token.scopes.includes(scope));
-  }
-
-  async revokeTokenByJtiAndUserId(userId: string, jti: string) {
-    const result = await this.userModel.updateOne(
-      {
-        _id: userId,
-        'tokens.jti': jti,
-        'tokens.revoked_at': { $exists: false },
-      },
-      { $set: { 'tokens.$.revoked_at': new Date() } },
-    );
-
-    return result.modifiedCount === 1;
   }
 }

@@ -3,6 +3,7 @@ import { UserService } from './user.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from './schemas/user.schema';
 import { CryptoService } from '../crypto/crypto.service';
+import { TokenService } from './token.service';
 
 @Global()
 @Module({
@@ -14,7 +15,7 @@ import { CryptoService } from '../crypto/crypto.service';
       },
     ]),
   ],
-  providers: [UserService, CryptoService],
-  exports: [UserService],
+  providers: [UserService, TokenService, CryptoService],
+  exports: [UserService, TokenService],
 })
 export class UserModule {}
