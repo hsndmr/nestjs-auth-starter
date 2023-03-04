@@ -8,8 +8,6 @@ import { CryptoService } from '../crypto/crypto.service';
 
 @Injectable()
 export class UserService {
-  model: any;
-
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     private readonly jwtService: JwtService,
