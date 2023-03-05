@@ -50,7 +50,7 @@ export class JwtAuthGuard implements CanActivate {
               try {
                 const user = await this.tokenService.findUserByJtiAndUserId(
                   context.verifiedToken.jti,
-                  context.verifiedToken.sub,
+                  context.verifiedToken.subject,
                 );
 
                 if (!user) {

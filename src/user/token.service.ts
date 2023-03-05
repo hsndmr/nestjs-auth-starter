@@ -19,7 +19,7 @@ export class TokenService {
 
   async create({ user, exp, scopes }: TokenOptions) {
     const signed = this.jwtService.sign({
-      sub: user.id,
+      subject: user.id,
       exp: exp,
     });
 

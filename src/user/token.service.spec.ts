@@ -133,10 +133,10 @@ describe('TokenService', () => {
 
         const verifiedToken = await jwtService.verify(token);
 
-        const { jti, sub } = verifiedToken;
+        const { jti, subject } = verifiedToken;
 
         // Act
-        const foundToken = await service.findUserByJtiAndUserId(jti, sub);
+        const foundToken = await service.findUserByJtiAndUserId(jti, subject);
 
         // Assert
         expect(foundToken._id).toEqual(user._id);

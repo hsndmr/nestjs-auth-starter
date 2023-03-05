@@ -31,7 +31,7 @@ describe('JwtService', () => {
 
   it('should be signed', function () {
     const signed = service.sign({
-      sub: '123',
+      subject: '123',
     });
 
     expect(signed).toBeDefined();
@@ -39,7 +39,7 @@ describe('JwtService', () => {
 
   it('should be verified', async function () {
     const signed = service.sign({
-      sub: '123',
+      subject: '123',
     });
 
     const verified = await service.verify(signed.token);
@@ -47,7 +47,7 @@ describe('JwtService', () => {
     expect(verified).toEqual({
       exp: signed.exp,
       jti: signed.jti,
-      sub: '123',
+      subject: '123',
       iat: expect.any(Number),
     });
   });
@@ -57,7 +57,7 @@ describe('JwtService', () => {
     const oldDate = new Date(newDate.getTime() - 61 * 60 * 1000);
     jest.useFakeTimers().setSystemTime(oldDate);
     const signed = service.sign({
-      sub: '123',
+      subject: '123',
     });
     jest.useFakeTimers().setSystemTime(newDate);
 
@@ -66,7 +66,7 @@ describe('JwtService', () => {
 
   it('should throw error invalid signature when verifying token', async function () {
     const signed = service.sign({
-      sub: '123',
+      subject: '123',
     });
 
     await expect(service.verify(`${signed.token}1`)).rejects.toThrow(

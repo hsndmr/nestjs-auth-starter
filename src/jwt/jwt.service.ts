@@ -30,7 +30,7 @@ export class JwtService {
     const token = this.jwt.sign(
       {
         exp: exp,
-        sub: options.sub,
+        subject: options.subject,
         jti: jti,
       },
       this.options.secret,
