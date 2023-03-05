@@ -117,18 +117,16 @@ describe('AuthController (e2e)', () => {
     it('should login a user (tokenCreated status)', async () => {
       const user = await userFactory.create();
 
-      return (
-        request(app.getHttpServer())
-          .post(`${AUTH_ROUTE_PREFIX}/login-user`)
-          .send({
-            email: user.email,
-            password: 'myPassword123',
-          })
-          // .expect(HttpStatus.CREATED)
-          .then((response) => {
-            expect(response.body).toHaveProperty('token');
-          })
-      );
+      return request(app.getHttpServer())
+        .post(`${AUTH_ROUTE_PREFIX}/login-user`)
+        .send({
+          email: user.email,
+          password: 'myPassword123',
+        })
+        .expect(HttpStatus.CREATED)
+        .then((response) => {
+          expect(response.body).toHaveProperty('token');
+        });
     });
 
     it('should return a bad request error if email is missing (notFoundUser status)', async () => {
