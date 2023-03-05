@@ -82,12 +82,13 @@ describe('AuthController (e2e)', () => {
         throw new Error('Test error');
       });
 
-      const response = await request(app.getHttpServer())
+      return request(app.getHttpServer())
         .post(USER_ROUTE)
         .send(createUserDto)
-        .expect(HttpStatus.INTERNAL_SERVER_ERROR);
-
-      expect(response.body.message).toEqual('Server error');
+        .expect(HttpStatus.INTERNAL_SERVER_ERROR)
+        .then((response) => {
+          expect(response.body.message).toEqual('Server error');
+        });
     });
   });
 
