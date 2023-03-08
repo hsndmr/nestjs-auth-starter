@@ -5,6 +5,7 @@ import {
   HttpException,
   HttpStatus,
   Post,
+  Res,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -24,6 +25,8 @@ import { TokenService } from '../user/token.service';
 import { LoginUserDto } from './dtos/login-user.dto';
 import { userLoginMachine } from './machines/user-login.machine';
 import { CryptoService } from '../crypto/crypto.service';
+import { Response } from 'express';
+import { COOKIE_JWT_KEY } from './constants';
 
 @Controller(AUTH_ROUTE_PREFIX)
 @UseInterceptors(MongooseClassSerializerInterceptor(UserModel))
@@ -37,7 +40,10 @@ export class AuthController {
   ) {}
 
   @Post('user')
-  createUser(@Body() createUserDto: CreateUserDto) {
+  createUser(
+    @Body() createUserDto: CreateUserDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
     const service = interpret(
       userCreatorMachine
         .withContext({
@@ -105,6 +111,10 @@ export class AuthController {
             return;
           }
 
+          response.cookie(COOKIE_JWT_KEY, snapshot.context.token, {
+            httpOnly: true,
+          });
+
           resolve({
             user: snapshot.context.user,
             token: snapshot.context.token,
@@ -122,7 +132,10 @@ export class AuthController {
   }
 
   @Post('login-user')
-  async login(@Body() loginUserDto: LoginUserDto) {
+  async login(
+    @Body() loginUserDto: LoginUserDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
     const service = interpret(
       userLoginMachine
         .withContext({
@@ -215,6 +228,10 @@ export class AuthController {
 
             return;
           }
+
+          response.cookie(COOKIE_JWT_KEY, snapshot.context.token, {
+            httpOnly: true,
+          });
 
           resolve({
             user: snapshot.context.user,
