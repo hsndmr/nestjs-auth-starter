@@ -46,7 +46,9 @@ export class JwtAuthGuard implements CanActivate {
       jwtValidatorMachine
         .withContext({
           authorizationHeader: request.headers['authorization'],
-          authorizationCookie: request.cookies['token'],
+          authorizationCookie: request.cookies
+            ? request.cookies[COOKIE_JWT_KEY]
+            : undefined,
         })
         .withConfig({
           services: {
