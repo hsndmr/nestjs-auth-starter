@@ -4,6 +4,7 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
+  PlainLiteralObject,
 } from '@nestjs/common';
 import { IncomingMessage } from 'http';
 import { UserDocument } from '../user/schemas/user.schema';
@@ -15,6 +16,8 @@ import { I18nService } from 'nestjs-i18n';
 import { Reflector } from '@nestjs/core';
 import { SCOPES_KEY } from './decorators/scopes.decorator';
 import { TokenService } from '../user/token.service';
+import { Response } from 'express';
+import { COOKIE_JWT_KEY } from './constants';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -29,7 +32,10 @@ export class JwtAuthGuard implements CanActivate {
   canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest() as IncomingMessage & {
       user?: UserDocument;
+      cookies: PlainLiteralObject;
     };
+
+    const response = context.switchToHttp().getResponse() as Response;
 
     const scopes = this.reflector.getAllAndOverride<string[]>(SCOPES_KEY, [
       context.getHandler(),
@@ -40,6 +46,7 @@ export class JwtAuthGuard implements CanActivate {
       jwtValidatorMachine
         .withContext({
           authorizationHeader: request.headers['authorization'],
+          authorizationCookie: request.cookies['token'],
         })
         .withConfig({
           services: {
@@ -87,9 +94,12 @@ export class JwtAuthGuard implements CanActivate {
             return resolve(true);
           }
 
-          const [messageKey, status] = this.getErrorMessageKeyAndStatus(
-            snapshot.matches('forbidden'),
-          );
+          const isForbiddenStatus = snapshot.matches('forbidden');
+
+          const [messageKey, status] =
+            this.getErrorMessageKeyAndStatus(isForbiddenStatus);
+
+          !isForbiddenStatus && response.clearCookie(COOKIE_JWT_KEY);
 
           return reject(
             new HttpException(this.i18n.translate(messageKey), status),

@@ -3,6 +3,9 @@ import { JwtPayload } from 'jsonwebtoken';
 
 export interface JwtValidatorContext {
   authorizationHeader?: string | string[];
+
+  authorizationCookie?: string;
+
   token?: string;
   user?: UserDocument;
   verifiedToken?: JwtPayload;

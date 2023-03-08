@@ -12,8 +12,24 @@ const jwtValidatorMachine = createMachine<JwtValidatorContext>(
     schema: {
       services: {} as JwtValidatorServiceSchema,
     },
-    initial: 'parsingTokenFromHeader',
+    initial: 'parsingTokenFromCookie',
     states: {
+      parsingTokenFromCookie: {
+        always: [
+          {
+            target: 'verifyingToken',
+            cond: 'isValidCookie',
+            actions: assign((context) => {
+              return {
+                token: context.authorizationCookie,
+              };
+            }),
+          },
+          {
+            target: 'parsingTokenFromHeader',
+          },
+        ],
+      },
       parsingTokenFromHeader: {
         always: [
           {
@@ -101,6 +117,9 @@ const jwtValidatorMachine = createMachine<JwtValidatorContext>(
     guards: {
       isValidHeader: ({ authorizationHeader }) => {
         return !(!authorizationHeader || Array.isArray(authorizationHeader));
+      },
+      isValidCookie: ({ authorizationCookie }) => {
+        return !!authorizationCookie;
       },
     },
   },
