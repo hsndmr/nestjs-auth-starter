@@ -12,18 +12,18 @@ async function bootstrap() {
 
   app.useGlobalPipes(new ValidationPipe());
 
-  // const documentBuilderConfig = new DocumentBuilder()
-  //   .setTitle('')
-  //   .setDescription('')
-  //   .setVersion('1.0')
-  //   .addTag('auth')
-  //   .addBearerAuth()
-  //   .build();
-  // const swaggerDocument = SwaggerModule.createDocument(
-  //   app,
-  //   documentBuilderConfig,
-  // );
-  // SwaggerModule.setup('api', app, swaggerDocument);
+  const documentBuilderConfig = new DocumentBuilder()
+    .setTitle('')
+    .setDescription('')
+    .setVersion('1.0')
+    .addTag('auth')
+    .addBearerAuth()
+    .build();
+  const swaggerDocument = SwaggerModule.createDocument(
+    app,
+    documentBuilderConfig,
+  );
+  SwaggerModule.setup('api', app, swaggerDocument);
 
   app.useLogger(app.get(AppLogger));
   app.use(cookieParser());
