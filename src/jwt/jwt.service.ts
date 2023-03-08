@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import * as jwt from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 import { MODULE_OPTIONS_TOKEN } from './jwt.module-definition';
 import { JwtModuleOptions } from './interfaces/jwt-module-options.interface';
 import { SignOptions } from './interfaces/jwt-service-sign-options.interface';

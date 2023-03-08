@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import * as crypto from 'crypto';
-import * as bcrypt from 'bcrypt';
+import crypto from 'crypto';
+import bcrypt from 'bcrypt';
 @Injectable()
 export class CryptoService {
   crypto: typeof crypto;

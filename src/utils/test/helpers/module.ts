@@ -11,7 +11,7 @@ import {
 import { ConfigModule } from '@nestjs/config';
 import { AppLogger } from '../../../logger/app-logger.service';
 import { AcceptLanguageResolver, I18nModule, QueryResolver } from 'nestjs-i18n';
-import * as path from 'path';
+import path from 'path';
 import { LoggerModule } from '../../../logger/logger.module';
 import { CryptoModule } from '../../../crypto/crypto.module';
 import { JwtModule } from '../../../jwt/jwt.module';

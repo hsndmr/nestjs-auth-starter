@@ -1,4 +1,4 @@
-import * as request from 'supertest';
+import request from 'supertest';
 
 export const authenticatedRequest = (app, token: string) => {
   const agent = request.agent(app);
