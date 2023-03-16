@@ -14,7 +14,7 @@ import { TokenService } from '../src/user/token.service';
 
 const USER_ROUTE = `${AUTH_ROUTE_PREFIX}/user`;
 const REGISTER_ROUTE = `${AUTH_ROUTE_PREFIX}/register`;
-
+const LOGIN_ROUTE = `${AUTH_ROUTE_PREFIX}/login`;
 describe('AuthController (e2e)', () => {
   let app: INestApplication;
   let userFactory: UserFactory;
@@ -115,7 +115,7 @@ describe('AuthController (e2e)', () => {
     });
   });
 
-  describe('login-user (POST)', () => {
+  describe('login (POST)', () => {
     it('should login a user (tokenCreated status)', async () => {
       const user = await userFactory.create();
 
@@ -133,7 +133,7 @@ describe('AuthController (e2e)', () => {
 
     it('should return a bad request error if email is missing (notFoundUser status)', async () => {
       return request(app.getHttpServer())
-        .post(`${AUTH_ROUTE_PREFIX}/login-user`)
+        .post(LOGIN_ROUTE)
         .send({
           email: 'email@email.com',
           password: 'myPassword123',
@@ -146,7 +146,7 @@ describe('AuthController (e2e)', () => {
 
     it('should return a bad request error if password is missing', async () => {
       return request(app.getHttpServer())
-        .post(`${AUTH_ROUTE_PREFIX}/login-user`)
+        .post(LOGIN_ROUTE)
         .send({
           email: 'email@email.com',
         })
@@ -160,7 +160,7 @@ describe('AuthController (e2e)', () => {
 
     it('should return a bad request error if email is invalid', async () => {
       return request(app.getHttpServer())
-        .post(`${AUTH_ROUTE_PREFIX}/login-user`)
+        .post(LOGIN_ROUTE)
         .send({
           email: 'invalid',
           password: 'myPassword123',
@@ -175,7 +175,7 @@ describe('AuthController (e2e)', () => {
       const user = await userFactory.create();
 
       return request(app.getHttpServer())
-        .post(`${AUTH_ROUTE_PREFIX}/login-user`)
+        .post(LOGIN_ROUTE)
         .send({
           email: user.email,
           password: 'wrongPassword',
@@ -197,7 +197,7 @@ describe('AuthController (e2e)', () => {
       });
 
       return request(app.getHttpServer())
-        .post(`${AUTH_ROUTE_PREFIX}/login-user`)
+        .post(LOGIN_ROUTE)
         .send(loginUserDto)
         .expect(HttpStatus.INTERNAL_SERVER_ERROR)
         .then((response) => {

@@ -131,7 +131,7 @@ export class AuthController {
     return user;
   }
 
-  @Post('login-user')
+  @Post('login')
   async login(
     @Body() loginUserDto: LoginUserDto,
     @Res({ passthrough: true }) response: Response,
