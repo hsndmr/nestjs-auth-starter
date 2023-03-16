@@ -39,7 +39,7 @@ export class AuthController {
     private readonly cryptoService: CryptoService,
   ) {}
 
-  @Post('user')
+  @Post('register')
   createUser(
     @Body() createUserDto: CreateUserDto,
     @Res({ passthrough: true }) response: Response,

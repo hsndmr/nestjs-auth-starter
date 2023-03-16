@@ -13,6 +13,7 @@ import { authenticatedRequest } from '../src/utils/test/helpers/request';
 import { TokenService } from '../src/user/token.service';
 
 const USER_ROUTE = `${AUTH_ROUTE_PREFIX}/user`;
+const REGISTER_ROUTE = `${AUTH_ROUTE_PREFIX}/register`;
 
 describe('AuthController (e2e)', () => {
   let app: INestApplication;
@@ -39,7 +40,7 @@ describe('AuthController (e2e)', () => {
   describe('user (POST)', () => {
     it('it should create a user', () => {
       return request(app.getHttpServer())
-        .post(USER_ROUTE)
+        .post(REGISTER_ROUTE)
         .send({
           email: userFactory.faker.internet.email(),
           name: userFactory.faker.name.firstName(),
@@ -56,7 +57,7 @@ describe('AuthController (e2e)', () => {
     it('it should not create a user with an existing email', async () => {
       const user = await userFactory.create();
       return request(app.getHttpServer())
-        .post(USER_ROUTE)
+        .post(REGISTER_ROUTE)
         .send({
           email: user.email,
           name: userFactory.faker.name.firstName(),
@@ -83,7 +84,7 @@ describe('AuthController (e2e)', () => {
       });
 
       return request(app.getHttpServer())
-        .post(USER_ROUTE)
+        .post(REGISTER_ROUTE)
         .send(createUserDto)
         .expect(HttpStatus.INTERNAL_SERVER_ERROR)
         .then((response) => {
