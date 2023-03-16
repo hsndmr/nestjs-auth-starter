@@ -120,7 +120,7 @@ describe('AuthController (e2e)', () => {
       const user = await userFactory.create();
 
       return request(app.getHttpServer())
-        .post(`${AUTH_ROUTE_PREFIX}/login-user`)
+        .post(LOGIN_ROUTE)
         .send({
           email: user.email,
           password: 'myPassword123',
@@ -217,7 +217,7 @@ describe('AuthController (e2e)', () => {
       });
 
       return request(app.getHttpServer())
-        .post(`${AUTH_ROUTE_PREFIX}/login-user`)
+        .post(LOGIN_ROUTE)
         .send(loginUserDto)
         .expect(HttpStatus.INTERNAL_SERVER_ERROR)
         .then((response) => {
