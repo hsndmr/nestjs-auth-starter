@@ -15,6 +15,8 @@ import { TokenService } from '../src/user/token.service';
 const USER_ROUTE = `${AUTH_ROUTE_PREFIX}/user`;
 const REGISTER_ROUTE = `${AUTH_ROUTE_PREFIX}/register`;
 const LOGIN_ROUTE = `${AUTH_ROUTE_PREFIX}/login`;
+const LOGOUT_ROUTE = `${AUTH_ROUTE_PREFIX}/logout`;
+
 describe('AuthController (e2e)', () => {
   let app: INestApplication;
   let userFactory: UserFactory;
@@ -223,6 +225,30 @@ describe('AuthController (e2e)', () => {
         .then((response) => {
           expect(response.body.message).toEqual('Server error');
         });
+    });
+  });
+
+  describe('logout (POST)', () => {
+    it('should successfully logout the user and clear the JWT cookie', async () => {
+      const user = await userFactory.create();
+      const token = await tokenService.create({ user });
+
+      const response = await authenticatedRequest(app.getHttpServer(), token)
+        .post(LOGOUT_ROUTE)
+        .expect(HttpStatus.CREATED);
+
+      const revokedToken = await tokenService.findUserByJtiAndUserId(
+        user.tokens[0].jti,
+        user.id,
+      );
+      expect(response.header['set-cookie'][0]).toMatch(/token=;/);
+      expect(revokedToken).toBeNull();
+    });
+
+    it('should return an unauthorized error if the user is not authenticated', async () => {
+      await request(app.getHttpServer())
+        .post(LOGOUT_ROUTE)
+        .expect(HttpStatus.UNAUTHORIZED);
     });
   });
 

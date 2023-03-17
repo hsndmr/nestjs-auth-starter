@@ -241,4 +241,16 @@ export class AuthController {
         .start();
     });
   }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Post('logout')
+  async logout(
+    @Res({ passthrough: true }) response: Response,
+    @User() user: UserDocument,
+  ) {
+    await this.tokenService.revokeByJtiAndUserId(user._id, user.tokens[0].jti);
+    response.clearCookie(COOKIE_JWT_KEY);
+    return {};
+  }
 }
