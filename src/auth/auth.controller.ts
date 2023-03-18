@@ -113,6 +113,7 @@ export class AuthController {
 
           response.cookie(COOKIE_JWT_KEY, snapshot.context.token, {
             httpOnly: true,
+            sameSite: 'strict',
           });
 
           resolve({
@@ -231,6 +232,7 @@ export class AuthController {
 
           response.cookie(COOKIE_JWT_KEY, snapshot.context.token, {
             httpOnly: true,
+            sameSite: 'strict',
           });
 
           resolve({
