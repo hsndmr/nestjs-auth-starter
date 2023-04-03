@@ -3,6 +3,8 @@ import {
   JwtValidatorContext,
   JwtValidatorServiceSchema,
 } from './jwt-validator.types';
+import { HttpException, HttpStatus } from '@nestjs/common';
+import { COOKIE_JWT_KEY } from '../constants';
 
 const jwtValidatorMachine = createMachine<JwtValidatorContext>(
   {
@@ -81,20 +83,61 @@ const jwtValidatorMachine = createMachine<JwtValidatorContext>(
         type: 'final',
       },
       unauthorized: {
+        entry: ['assignUnauthorizedErrorToContext', 'clearCookie'],
         type: 'final',
       },
       invalidToken: {
+        entry: ['assignUnauthorizedErrorToContext', 'clearCookie'],
         type: 'final',
       },
       invalidHeader: {
+        entry: ['assignUnauthorizedErrorToContext', 'clearCookie'],
         type: 'final',
       },
       forbidden: {
+        entry: assign((context) => ({
+          error: new HttpException(
+            context.i18n.translate('errors.forbidden'),
+            HttpStatus.FORBIDDEN,
+          ),
+        })),
         type: 'final',
       },
     },
   },
   {
+    services: {
+      verifyToken: (context) => {
+        return context.jwtService.verify(context.token);
+      },
+      verifyUser: async (context) => {
+        try {
+          const user = await context.tokenService.findUserByJtiAndUserId(
+            context.verifiedToken.jti,
+            context.verifiedToken.subject,
+          );
+
+          if (!user) {
+            return Promise.reject('');
+          }
+
+          return Promise.resolve(user);
+        } catch (e) {
+          return Promise.reject(e);
+        }
+      },
+      checkScopes: (context) => {
+        const tokenCanAccess = context.tokenService.can(
+          context.user.tokens[0],
+          context.scopes,
+        );
+        if (!tokenCanAccess) {
+          return Promise.reject('');
+        }
+
+        return Promise.resolve(true);
+      },
+    },
     actions: {
       assignTokenToContext: assign((context) => {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -113,6 +156,15 @@ const jwtValidatorMachine = createMachine<JwtValidatorContext>(
           user: event.data,
         };
       }),
+      assignUnauthorizedErrorToContext: assign((context) => ({
+        error: new HttpException(
+          context.i18n.translate('errors.unauthorized'),
+          HttpStatus.UNAUTHORIZED,
+        ),
+      })),
+      clearCookie: (context) => {
+        context.response.clearCookie(COOKIE_JWT_KEY);
+      },
     },
     guards: {
       isValidHeader: ({ authorizationHeader }) => {

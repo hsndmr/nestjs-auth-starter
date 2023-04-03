@@ -1,8 +1,6 @@
 import {
   CanActivate,
   ExecutionContext,
-  HttpException,
-  HttpStatus,
   Injectable,
   PlainLiteralObject,
 } from '@nestjs/common';
@@ -18,6 +16,8 @@ import { SCOPES_KEY } from './decorators/scopes.decorator';
 import { TokenService } from '../user/token.service';
 import { Response } from 'express';
 import { COOKIE_JWT_KEY } from './constants';
+import { startMachine } from '../utils/machine/start-machine';
+import { JwtValidatorContext } from './machines/jwt-validator.types';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -29,7 +29,7 @@ export class JwtAuthGuard implements CanActivate {
     private reflector: Reflector,
   ) {}
 
-  canActivate(context: ExecutionContext): Promise<boolean> {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest() as IncomingMessage & {
       user?: UserDocument;
       cookies: PlainLiteralObject;
@@ -43,81 +43,26 @@ export class JwtAuthGuard implements CanActivate {
     ]);
 
     const service = interpret(
-      jwtValidatorMachine
-        .withContext({
-          authorizationHeader: request.headers['authorization'],
-          authorizationCookie: request.cookies
-            ? request.cookies[COOKIE_JWT_KEY]
-            : undefined,
-        })
-        .withConfig({
-          services: {
-            verifyToken: (context) => {
-              return this.jwtService.verify(context.token);
-            },
-            verifyUser: async (context) => {
-              try {
-                const user = await this.tokenService.findUserByJtiAndUserId(
-                  context.verifiedToken.jti,
-                  context.verifiedToken.subject,
-                );
-
-                if (!user) {
-                  return Promise.reject('');
-                }
-
-                return Promise.resolve(user);
-              } catch (e) {
-                return Promise.reject(e);
-              }
-            },
-            checkScopes: (context) => {
-              const tokenCanAccess = this.tokenService.can(
-                context.user.tokens[0],
-                scopes,
-              );
-              if (!tokenCanAccess) {
-                return Promise.reject('');
-              }
-
-              return Promise.resolve(true);
-            },
-          },
-        }),
+      jwtValidatorMachine.withContext({
+        authorizationHeader: request.headers['authorization'],
+        authorizationCookie: request.cookies
+          ? request.cookies[COOKIE_JWT_KEY]
+          : undefined,
+        jwtService: this.jwtService,
+        tokenService: this.tokenService,
+        scopes: scopes,
+        i18n: this.i18n,
+        response,
+      }),
     );
 
-    return new Promise((resolve, reject) => {
-      service
-        .onDone(() => {
-          const snapshot = service.getSnapshot();
+    const snapshot = await startMachine<JwtValidatorContext>(service);
 
-          if (snapshot.matches('authorized')) {
-            request.user = snapshot.context.user;
-            return resolve(true);
-          }
-
-          const isForbiddenStatus = snapshot.matches('forbidden');
-
-          const [messageKey, status] =
-            this.getErrorMessageKeyAndStatus(isForbiddenStatus);
-
-          !isForbiddenStatus && response.clearCookie(COOKIE_JWT_KEY);
-
-          return reject(
-            new HttpException(this.i18n.translate(messageKey), status),
-          );
-        })
-        .start();
-    });
-  }
-
-  protected getErrorMessageKeyAndStatus(
-    isForbiddenStatus: boolean,
-  ): [string, number] {
-    if (isForbiddenStatus) {
-      return ['errors.forbidden', HttpStatus.FORBIDDEN];
+    if (snapshot.matches('authorized')) {
+      request.user = snapshot.context.user;
+      return true;
     }
 
-    return ['errors.unauthorized', HttpStatus.UNAUTHORIZED];
+    throw snapshot.context.error;
   }
 }
