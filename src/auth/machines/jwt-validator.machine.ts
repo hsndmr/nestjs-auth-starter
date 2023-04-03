@@ -3,7 +3,7 @@ import {
   JwtValidatorContext,
   JwtValidatorServiceSchema,
 } from './jwt-validator.types';
-import { HttpException, HttpStatus } from '@nestjs/common';
+import { HttpStatus } from '@nestjs/common';
 import { COOKIE_JWT_KEY } from '../constants';
 
 const jwtValidatorMachine = createMachine<JwtValidatorContext>(
@@ -96,10 +96,8 @@ const jwtValidatorMachine = createMachine<JwtValidatorContext>(
       },
       forbidden: {
         entry: assign((context) => ({
-          error: new HttpException(
-            context.i18n.translate('errors.forbidden'),
-            HttpStatus.FORBIDDEN,
-          ),
+          errorCode: HttpStatus.FORBIDDEN,
+          errorMessage: context.i18n.translate('errors.forbidden'),
         })),
         type: 'final',
       },
@@ -157,10 +155,8 @@ const jwtValidatorMachine = createMachine<JwtValidatorContext>(
         };
       }),
       assignUnauthorizedErrorToContext: assign((context) => ({
-        error: new HttpException(
-          context.i18n.translate('errors.unauthorized'),
-          HttpStatus.UNAUTHORIZED,
-        ),
+        errorCode: HttpStatus.UNAUTHORIZED,
+        errorMessage: context.i18n.translate('errors.unauthorized'),
       })),
       clearCookie: (context) => {
         context.response.clearCookie(COOKIE_JWT_KEY);

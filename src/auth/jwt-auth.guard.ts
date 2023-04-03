@@ -1,6 +1,7 @@
 import {
   CanActivate,
   ExecutionContext,
+  HttpException,
   Injectable,
   PlainLiteralObject,
 } from '@nestjs/common';
@@ -63,6 +64,9 @@ export class JwtAuthGuard implements CanActivate {
       return true;
     }
 
-    throw snapshot.context.error;
+    throw new HttpException(
+      snapshot.context.errorMessage,
+      snapshot.context.errorCode,
+    );
   }
 }

@@ -3,7 +3,6 @@ import { JwtPayload } from 'jsonwebtoken';
 import { JwtService } from '../../jwt/jwt.service';
 import { TokenService } from '../../user/token.service';
 import { I18nService } from 'nestjs-i18n';
-import { HttpException } from '@nestjs/common';
 import { Response } from 'express';
 
 export interface JwtValidatorContext {
@@ -16,7 +15,8 @@ export interface JwtValidatorContext {
   tokenService?: TokenService;
   scopes?: string[];
   i18n?: I18nService;
-  error?: HttpException;
+  errorMessage?: string;
+  errorCode?: number;
   response?: Response;
 }
 
