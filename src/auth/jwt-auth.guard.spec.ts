@@ -8,7 +8,7 @@ import { JwtService } from '../jwt/jwt.service';
 import { UserService } from '../user/user.service';
 import { UserFactory } from '../utils/test/factories/user.factory';
 import { I18nService } from 'nestjs-i18n';
-import { HttpException, HttpStatus } from '@nestjs/common';
+import { HttpStatus } from '@nestjs/common';
 import { TokenService } from '../user/token.service';
 
 describe('JwtAuthGuard', () => {
@@ -112,9 +112,11 @@ describe('JwtAuthGuard', () => {
     getRequest.mockImplementation(request);
 
     // Act & Assert
-    await expect(jwtAuthGuard.canActivate(context as any)).rejects.toEqual(
-      new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED),
-    );
+    await expect(
+      jwtAuthGuard.canActivate(context as any),
+    ).rejects.toMatchObject({
+      status: HttpStatus.UNAUTHORIZED,
+    });
     expect(request).toBeCalledTimes(1);
   });
 
@@ -127,9 +129,11 @@ describe('JwtAuthGuard', () => {
     getRequest.mockImplementation(request);
 
     // Act & Assert
-    await expect(jwtAuthGuard.canActivate(context as any)).rejects.toEqual(
-      new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED),
-    );
+    await expect(
+      jwtAuthGuard.canActivate(context as any),
+    ).rejects.toMatchObject({
+      status: HttpStatus.UNAUTHORIZED,
+    });
     expect(request).toBeCalledTimes(1);
   });
 
@@ -149,9 +153,11 @@ describe('JwtAuthGuard', () => {
     getRequest.mockImplementation(request);
 
     // Act & Assert
-    await expect(jwtAuthGuard.canActivate(context as any)).rejects.toEqual(
-      new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED),
-    );
+    await expect(
+      jwtAuthGuard.canActivate(context as any),
+    ).rejects.toMatchObject({
+      status: HttpStatus.UNAUTHORIZED,
+    });
     expect(request).toBeCalledTimes(1);
   });
 
@@ -173,9 +179,11 @@ describe('JwtAuthGuard', () => {
     getRequest.mockImplementation(request);
 
     // Act & Assert
-    await expect(jwtAuthGuard.canActivate(context as any)).rejects.toEqual(
-      new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED),
-    );
+    await expect(
+      jwtAuthGuard.canActivate(context as any),
+    ).rejects.toMatchObject({
+      status: HttpStatus.UNAUTHORIZED,
+    });
     expect(request).toBeCalledTimes(1);
   });
 
@@ -197,9 +205,11 @@ describe('JwtAuthGuard', () => {
     getRequest.mockImplementation(request);
 
     // Act & Assert
-    await expect(jwtAuthGuard.canActivate(context as any)).rejects.toEqual(
-      new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED),
-    );
+    await expect(
+      jwtAuthGuard.canActivate(context as any),
+    ).rejects.toMatchObject({
+      status: HttpStatus.UNAUTHORIZED,
+    });
     expect(request).toBeCalledTimes(1);
   });
 
@@ -271,9 +281,11 @@ describe('JwtAuthGuard', () => {
       reflectorMock.getAllAndOverride.mockReturnValue(['write:users']);
 
       // Act & Assert
-      await expect(jwtAuthGuard.canActivate(context as any)).rejects.toEqual(
-        new HttpException('Forbidden', HttpStatus.FORBIDDEN),
-      );
+      await expect(
+        jwtAuthGuard.canActivate(context as any),
+      ).rejects.toMatchObject({
+        status: HttpStatus.FORBIDDEN,
+      });
       expect(request).toBeCalledTimes(1);
     });
 
@@ -292,9 +304,11 @@ describe('JwtAuthGuard', () => {
       getRequest.mockImplementation(request);
 
       // Act & Assert
-      await expect(jwtAuthGuard.canActivate(context as any)).rejects.toEqual(
-        new HttpException('Forbidden', HttpStatus.FORBIDDEN),
-      );
+      await expect(
+        jwtAuthGuard.canActivate(context as any),
+      ).rejects.toMatchObject({
+        status: HttpStatus.FORBIDDEN,
+      });
       expect(request).toBeCalledTimes(1);
     });
   });

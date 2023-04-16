@@ -1,7 +1,6 @@
 import {
   CanActivate,
   ExecutionContext,
-  HttpException,
   Injectable,
   PlainLiteralObject,
 } from '@nestjs/common';
@@ -59,14 +58,8 @@ export class JwtAuthGuard implements CanActivate {
 
     const snapshot = await startMachine<JwtValidatorContext>(service);
 
-    if (snapshot.matches('authorized')) {
-      request.user = snapshot.context.user;
-      return true;
-    }
+    request.user = snapshot.context.user;
 
-    throw new HttpException(
-      snapshot.context.errorMessage,
-      snapshot.context.errorCode,
-    );
+    return true;
   }
 }
